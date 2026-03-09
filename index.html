@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Herrmann Model Activity</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { overflow: hidden; width: 100vw; height: 100vh; background: #1a1008; touch-action: none; user-select: none; }
+    canvas { display: block; touch-action: none; }
+
+    /* ─── START SCREEN ─────────────────────────── */
+    #start-screen {
+      position: fixed; inset: 0;
+      background: rgba(12, 6, 1, 0.45);
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 200;
+    }
+    #start-card {
+      background: linear-gradient(150deg, #3a1e07 0%, #1a0b02 100%);
+      border: 1px solid rgba(220, 175, 90, 0.32);
+      border-radius: 33px;
+      padding: 75px 81px 69px;
+      max-width: 690px; width: 90%;
+      text-align: center; color: #f0ddb8;
+      box-shadow: 0 24px 72px rgba(0,0,0,0.75);
+    }
+    #start-card h1    { font: 700 42px/1.25 'Georgia', serif; color: #f2c96a; margin-bottom: 12px; }
+    #start-card .sub  { font: 400 18px/1 'Georgia', serif; color: #9a8060; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 42px; }
+    #start-card .rule { width: 75px; height: 1px; background: rgba(220,175,90,.25); margin: 0 auto 39px; }
+    #start-card p     { font: 400 21px/1.7 'Georgia', serif; color: #d4c29a; margin-bottom: 15px; }
+    #start-card strong { color: #f0d090; }
+    #start-card em     { color: #d8c280; font-style: italic; }
+    #btn-start {
+      display: inline-block; margin-top: 51px;
+      padding: 21px 75px;
+      font: 600 24px/1 'Georgia', serif;
+      background: linear-gradient(135deg, #c88020, #954e0a);
+      color: #fff8e8; border: none; border-radius: 54px; cursor: pointer;
+      letter-spacing: .07em;
+      box-shadow: 0 4px 20px rgba(180,100,10,.50);
+      transition: transform .12s, box-shadow .12s;
+    }
+    #btn-start:hover  { transform: translateY(-2px); box-shadow: 0 7px 28px rgba(200,120,10,.65); }
+    #btn-start:active { transform: translateY(0); }
+
+    /* ─── LANGUAGE SELECTOR ─────────────────────── */
+    #lang-select-wrap { margin-bottom: 40px; text-align: center; }
+    #lang-select-label {
+      font: 400 18px/1 'Georgia', 'Yu Gothic', Meiryo, serif;
+      color: #9a8060; letter-spacing: .08em; margin-bottom: 14px;
+    }
+    #lang-select {
+      display: inline-flex; gap: 8px;
+      background: rgba(0,0,0,0.28); padding: 5px; border-radius: 36px;
+      border: 1px solid rgba(220,175,90,0.22);
+    }
+    .lang-opt { cursor: pointer; }
+    .lang-opt input[type=radio] { display: none; }
+    .lang-btn {
+      display: inline-block; padding: 11px 30px;
+      font: 600 18px/1 'Georgia', 'Yu Gothic', Meiryo, serif;
+      border-radius: 30px; color: rgba(240,220,180,0.42);
+      transition: background .18s, color .18s, box-shadow .18s;
+    }
+    .lang-opt input:checked + .lang-btn {
+      background: linear-gradient(135deg, #c88020, #954e0a);
+      color: #fff8e8; box-shadow: 0 2px 14px rgba(180,100,10,.45);
+    }
+    .lang-opt:hover input:not(:checked) + .lang-btn { color: rgba(240,220,180,0.72); }
+
+    /* ─── CJK FONT FALLBACK ─────────────────────── */
+    #step-label, #step-instructions, #sel-counter, #btn-confirm, #btn-start,
+    #start-card h1, #start-card .sub, #start-card p {
+      font-family: 'Georgia', 'Yu Gothic', 'Hiragino Mincho ProN', Meiryo, serif;
+    }
+
+    /* ─── TIMER ────────────────────────────────── */
+    #timer-display {
+      position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+      background: rgba(18,10,3,.76); color: #f0ddb8;
+      font: 700 30px/1 'Georgia', serif;
+      padding: 11px 32px; border-radius: 26px;
+      border: 1px solid rgba(240,200,110,.26);
+      letter-spacing: .10em; pointer-events: none;
+      display: none;
+      transition: color .3s, background .3s, border-color .3s;
+    }
+    #timer-display.amber   { color: #e8a020; border-color: rgba(240,160,20,.50); }
+    #timer-display.expired { color: #ff6030; border-color: rgba(255,80,30,.55); background: rgba(40,8,2,.86); animation: t-pulse .55s ease-in-out infinite; }
+    @keyframes t-pulse { 0%,100%{transform:translateX(-50%) scale(1)} 50%{transform:translateX(-50%) scale(1.07)} }
+
+    /* ─── +30s EXTENSION FLASH ─────────────────── */
+    #time-ext {
+      position: fixed; top: 68px; left: 50%; transform: translateX(-50%);
+      color: #ff8040; font: 700 20px/1 'Georgia', serif;
+      pointer-events: none; opacity: 0;
+    }
+    #time-ext.show { animation: ext-float 1.4s ease-out forwards; }
+    @keyframes ext-float {
+      0%  { opacity:0; transform:translateX(-50%) translateY(0); }
+      15% { opacity:1; transform:translateX(-50%) translateY(-5px); }
+      70% { opacity:1; transform:translateX(-50%) translateY(-20px); }
+      100%{ opacity:0; transform:translateX(-50%) translateY(-34px); }
+    }
+
+    /* ─── STEP PANEL ───────────────────────────── */
+    #step-panel {
+      position: fixed; top: 72px; left: 50%; transform: translateX(-50%);
+      max-width: 860px; width: 94%; text-align: center;
+      pointer-events: none; display: none;
+    }
+    #step-label {
+      font: 700 16px/1 'Georgia', serif; color: #f5d880;
+      letter-spacing: .14em; text-transform: uppercase; margin-bottom: 8px;
+    }
+    #step-instructions {
+      font: 400 19px/1.55 'Georgia', serif; color: rgba(240,220,180,.92);
+      background: rgba(18,10,3,.72);
+      padding: 12px 30px; border-radius: 18px;
+      border: 1px solid rgba(200,160,80,.18);
+    }
+
+    /* ─── SELECTION COUNTER ────────────────────── */
+    #sel-counter {
+      position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+      background: rgba(18,10,3,.72); color: #f0ddb8;
+      font: 600 15px/1 'Georgia', serif;
+      padding: 10px 26px; border-radius: 22px;
+      border: 1px solid rgba(240,200,110,.28);
+      pointer-events: none; white-space: nowrap; display: none;
+      transition: background .4s, border-color .4s, color .4s;
+    }
+    #sel-counter.all-done { background: rgba(32,65,24,.85); border-color: rgba(120,200,90,.55); color: #c4f09a; }
+
+    /* ─── CONFIRM BUTTON ───────────────────────── */
+    #btn-confirm {
+      position: fixed; bottom: 22px; right: 24px;
+      padding: 19px 39px; font: 600 21px/1 'Georgia', serif;
+      background: linear-gradient(135deg, #c88020, #954e0a);
+      color: #fff8e8; border: none; border-radius: 45px; cursor: pointer;
+      letter-spacing: .05em;
+      box-shadow: 0 4px 18px rgba(180,100,10,.50);
+      display: none;
+      transition: opacity .3s, transform .12s;
+    }
+    #btn-confirm:disabled { opacity: .30; cursor: not-allowed; }
+    #btn-confirm:not(:disabled):hover  { transform: translateY(-2px); }
+    #btn-confirm:not(:disabled):active { transform: translateY(0); }
+
+    /* ─── END SCREEN ───────────────────────────── */
+    #end-screen {
+      position: fixed; inset: 0;
+      background: rgba(12,6,1,.90);
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      display: none; align-items: center; justify-content: center;
+      z-index: 200;
+    }
+    #end-screen.show { display: flex; }
+    #end-card {
+      background: linear-gradient(150deg, #3a1e07 0%, #1a0b02 100%);
+      border: 1px solid rgba(220,175,90,.32); border-radius: 22px;
+      padding: 50px 54px 46px; max-width: 440px; width: 90%;
+      text-align: center; color: #f0ddb8;
+      box-shadow: 0 24px 72px rgba(0,0,0,.75);
+    }
+    #end-card h2 { font: 700 24px/1.2 'Georgia', serif; color: #f2c96a; margin-bottom: 16px; }
+    #end-card p  { font: 400 14px/1.7 'Georgia', serif; color: #d4c29a; }
+    .end-btns { margin-top: 34px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    #btn-reveal {
+      padding: 13px 30px; font: 600 14px/1 'Georgia', serif;
+      background: linear-gradient(135deg, #c88020, #954e0a);
+      color: #fff8e8; border: none; border-radius: 30px; cursor: pointer;
+      letter-spacing: .05em; box-shadow: 0 4px 18px rgba(180,100,10,.50);
+    }
+    #btn-reveal:hover { transform: translateY(-1px); }
+    .btn-sec {
+      padding: 12px 26px; font: 400 13px/1 'Georgia', serif;
+      background: rgba(255,255,255,.06); color: #c0a878;
+      border: 1px solid rgba(200,160,80,.28); border-radius: 28px; cursor: pointer;
+      transition: background .2s;
+    }
+    .btn-sec:hover { background: rgba(255,255,255,.12); }
+
+    /* ─── REVEAL RESULT ───────────────────────────── */
+    .result-grid { display: flex; gap: 14px; justify-content: center; margin: 22px 0 6px; flex-wrap: wrap; }
+    .result-item { display: flex; flex-direction: column; align-items: center; gap: 7px; }
+    .result-swatch {
+      width: 56px; height: 56px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font: 700 24px/1 'Georgia', serif; color: #fff;
+    }
+    .result-label { font: 400 11px/1 'Georgia', serif; color: #b8a888; text-transform: uppercase; letter-spacing: .08em; }
+  </style>
+</head>
+<body>
+
+  <div id="start-screen">
+    <div id="start-card">
+      <div id="lang-select-wrap">
+        <div id="lang-select-label">Language / 言語</div>
+        <div id="lang-select">
+          <label class="lang-opt"><input type="radio" name="lang" value="en" checked><span class="lang-btn">English</span></label>
+          <label class="lang-opt"><input type="radio" name="lang" value="ja"><span class="lang-btn">日本語</span></label>
+        </div>
+      </div>
+      <h1 id="sc-title">Herrmann Model Activity</h1>
+      <p class="sub" id="sc-sub">Thinking Style Profile</p>
+      <div class="rule"></div>
+      <p id="sc-p1">Select 4 cards which you think best describe yourself.</p>
+      <p id="sc-p2">Choose the cards which is your natural state</p>
+      <p id="sc-p3">(NOT who you want to be, or should be!)</p>
+      <p id="sc-p4">Keep an eye out for the clock and don't think too hard! :)</p>
+      <button id="btn-start">&#9654;&#160; Begin Activity</button>
+    </div>
+  </div>
+
+  <div id="timer-display">2:00</div>
+  <div id="time-ext">+30s &mdash; Time extended!</div>
+
+  <div id="step-panel">
+    <div id="step-label">Step 1 of 3</div>
+    <div id="step-instructions"></div>
+  </div>
+
+  <div id="sel-counter">0 / 4 selected</div>
+
+  <button id="btn-confirm" disabled>Confirm Selection &rarr;</button>
+
+  <div id="end-screen">
+    <div id="end-card">
+      <h2 id="end-title"></h2>
+      <div id="end-body"></div>
+      <div class="end-btns">
+        <button class="btn-sec" onclick="location.reload()">Try the activity again</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="importmap">
+  { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+
+    // ═════════════════════════════════════════
+    // LOCALISATION  (EN / JA)
+    // ═════════════════════════════════════════
+    let lang = 'en';
+    const STRINGS = {
+      en: {
+        title:       'Herrmann Model Activity',
+        sub:         'Thinking Style Profile',
+        p1:          'Select 4 cards which you think best describe yourself.',
+        p2:          'Choose the cards which is your natural state',
+        p3:          '(NOT who you want to be, or should be!)',
+        p4:          "Keep an eye out for the clock and don't think too hard! :)",
+        btnStart:    '▶\u00a0 Begin Activity',
+        step1Label:  'Step 1 of 4',
+        step1Instr:  'Select 4 cards which you think best describe yourself by either double-tapping or dragging the card into the below 4 slots. Within those 4 cards, please align them in the order you feel is closest to describing you.',
+        step2Label:  'Step 2 of 4',
+        step2Instr:  'The rightmost card has been discarded. Please choose another one, and change your order if required.',
+        step3Label:  'Step 3 of 4',
+        step3Instr:  'The rightmost card has been discarded. Please choose another one, and change your order if required.',
+        step4Label:  'Step 4 of 4 \u2014 Grand Reveal',
+        step4Instr:  'Tap each card to reveal your Herrmann colour.',
+        counterHint: 'double-tap or drag',
+        btnConfirm:  'Confirm Selection \u2192',
+        btnRetry:    'Try the activity again',
+        zoneLine1:   'Within these 4 cards..',
+        zoneLine2:   '\u2190 Most like me  \u00b7  Least like me \u2192',
+      },
+      ja: {
+        title:       'ハーマンモデル診断',
+        sub:         '考え方の分析',
+        p1:          'あなたを表すカードを4枚選んでください。',
+        p2:          '自然体の自分を表すものにしてください。',
+        p3:          '（なりたい、ならないといけない自分ではなく！）',
+        p4:          '制限時間に気を付けて、考え込み過ぎないようにお願いします！',
+        btnStart:    '▶\u00a0 はじめる',
+        step1Label:  'ステップ 1 / 4',
+        step1Instr:  '自分を最もよく表していると思うカードを4枚選び、ダブルタップまたはスロットにドラッグしてください。選んだ4枚は、より自分に近いと感じる順に並べてください。',
+        step2Label:  'ステップ 2 / 4',
+        step2Instr:  '一番右のカードが外されました。別のカードを1枚選び、必要であれば順番を入れ替えてください。',
+        step3Label:  'ステップ 3 / 4',
+        step3Instr:  '一番右のカードが外されました。別のカードを1枚選び、必要であれば順番を入れ替えてください。',
+        step4Label:  'ステップ 4 / 4 — グランドリビール',
+        step4Instr:  '各カードをタップして、あなたのハーマンカラー（利き脳カラー）を確認しましょう！',
+        counterHint: 'ダブルタップもしくはドラッグ',
+        btnConfirm:  'この内容で確定',
+        btnRetry:    '診断をやり直す',
+        zoneLine1:   'この4枚のカードのうち・・',
+        zoneLine2:   '\u2190 より自分に近い  \u00b7  より自分から遠い \u2192',
+      },
+    };
+    function T(key) { return STRINGS[lang][key]; }
+
+    // ============================================
+    // APP TITLE: Herrmann Model Activity
+    // MILESTONE: 5 — Game Flow, Steps & Timer
+    // WHAT'S NEW:
+    //   - Start screen with "Begin Activity" button
+    //   - Step instructions panel (updates each round)
+    //   - Step 1 timer: 2 min | Steps 2 & 3: 1 min each
+    //   - Timer turns amber when low, red when expired
+    //   - Auto +30s extension (with flash) each time timer hits 0
+    //   - "Confirm Selection" button to advance to next step
+    //   - Discard mechanic: rightmost zone card greyed & returned home
+    //   - Zone slot count reduces each round (4 → 3 → 2)
+    //   - Discarded cards cannot be re-selected
+    //   - Step 4: completion screen (M6 hook)
+    // ============================================
+
+
+    // ─────────────────────────────────────────
+    // SCENE
+    // ─────────────────────────────────────────
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xf0e6d5);
+
+
+    // ─────────────────────────────────────────
+    // RENDERER
+    // ─────────────────────────────────────────
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled   = true;
+    renderer.shadowMap.type      = THREE.PCFSoftShadowMap;
+    renderer.toneMapping         = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.1;
+    document.body.appendChild(renderer.domElement);
+
+
+    // ─────────────────────────────────────────
+    // CAMERA
+    // ─────────────────────────────────────────
+    const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(0, 9.5, 6.5);
+    camera.lookAt(0, 0, -0.5);
+
+
+    // ─────────────────────────────────────────
+    // LIGHTING
+    // ─────────────────────────────────────────
+    const ambientLight = new THREE.AmbientLight(0xfff5e4, 0.75);
+    scene.add(ambientLight);
+
+    const sunLight = new THREE.DirectionalLight(0xfffbe8, 2.2);
+    sunLight.position.set(-7, 13, 5);
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.width  = 2048;
+    sunLight.shadow.mapSize.height = 2048;
+    sunLight.shadow.camera.left   = -12;
+    sunLight.shadow.camera.right  =  12;
+    sunLight.shadow.camera.top    =  12;
+    sunLight.shadow.camera.bottom = -12;
+    sunLight.shadow.camera.near   = 1;
+    sunLight.shadow.camera.far    = 40;
+    sunLight.shadow.bias = -0.001;
+    scene.add(sunLight);
+
+    const fillLight = new THREE.DirectionalLight(0xe8eeff, 0.45);
+    fillLight.position.set(7, 6, -2);
+    scene.add(fillLight);
+
+
+    // ─────────────────────────────────────────
+    // PROCEDURAL WOOD TEXTURE
+    // ─────────────────────────────────────────
+    function createWoodTexture(w = 1024, h = 1024) {
+      const cv = document.createElement('canvas');
+      cv.width = w; cv.height = h;
+      const ctx = cv.getContext('2d');
+      ctx.fillStyle = '#7a4f2c';
+      ctx.fillRect(0, 0, w, h);
+      const bg = ctx.createLinearGradient(0, 0, w, h);
+      bg.addColorStop(0,   'rgba(180,115,55,0.25)');
+      bg.addColorStop(0.5, 'rgba(100,60,25,0.10)');
+      bg.addColorStop(1,   'rgba(160,100,45,0.20)');
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, w, h);
+      for (let i = 0; i < 130; i++) {
+        const x = (i / 130) * w + (Math.random() - 0.5) * 25;
+        const a = 0.03 + Math.random() * 0.13;
+        ctx.strokeStyle = Math.random() > 0.45 ? `rgba(25,8,0,${a})` : `rgba(210,155,75,${a * 0.5})`;
+        ctx.lineWidth = 0.4 + Math.random() * 2.8;
+        ctx.beginPath();
+        ctx.moveTo(x + Math.random() * 12, 0);
+        ctx.bezierCurveTo(
+          x + (Math.random() - 0.5) * 35, h * 0.33,
+          x + (Math.random() - 0.5) * 35, h * 0.66,
+          x + Math.random() * 12, h
+        );
+        ctx.stroke();
+      }
+      for (let i = 0; i < 10; i++) {
+        ctx.fillStyle = `rgba(${105 + ~~(Math.random()*35)},${60 + ~~(Math.random()*25)},${25 + ~~(Math.random()*15)},0.07)`;
+        ctx.fillRect(0, (i / 10) * h, w, h / 10);
+      }
+      const sh = ctx.createLinearGradient(0, 0, 0, h);
+      sh.addColorStop(0,    'rgba(255,230,160,0.09)');
+      sh.addColorStop(0.25, 'rgba(255,230,160,0.03)');
+      sh.addColorStop(1,    'rgba(0,0,0,0.06)');
+      ctx.fillStyle = sh;
+      ctx.fillRect(0, 0, w, h);
+      return new THREE.CanvasTexture(cv);
+    }
+
+
+    // ─────────────────────────────────────────
+    // TABLE
+    // ─────────────────────────────────────────
+    const woodTex = createWoodTexture();
+    woodTex.wrapS = woodTex.wrapT = THREE.RepeatWrapping;
+    woodTex.repeat.set(2.5, 1.5);
+
+    const table = new THREE.Mesh(
+      new THREE.BoxGeometry(13, 0.18, 9),
+      new THREE.MeshStandardMaterial({ map: woodTex, roughness: 0.62, metalness: 0.02 })
+    );
+    table.receiveShadow = true;
+    scene.add(table);
+
+    const trim = new THREE.Mesh(
+      new THREE.BoxGeometry(13.1, 0.16, 9.1),
+      new THREE.MeshStandardMaterial({ color: 0x4e2c10, roughness: 0.8 })
+    );
+    trim.position.y = -0.01;
+    scene.add(trim);
+
+
+    // ─────────────────────────────────────────
+    // COFFEE MUG
+    // ─────────────────────────────────────────
+    function createCoffeeTexture() {
+      const S = 256;
+      const cv = document.createElement('canvas');
+      cv.width = cv.height = S;
+      const ctx = cv.getContext('2d');
+      const g = ctx.createRadialGradient(S/2, S/2, 0, S/2, S/2, S/2);
+      g.addColorStop(0.00, '#160600'); g.addColorStop(0.50, '#2c0e04');
+      g.addColorStop(0.78, '#4a1f0c'); g.addColorStop(0.90, '#7a3818'); g.addColorStop(1.00, '#5e2a10');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, S, S);
+      const hl = ctx.createRadialGradient(S*0.37, S*0.34, 0, S*0.37, S*0.34, S*0.26);
+      hl.addColorStop(0, 'rgba(255,195,130,0.22)'); hl.addColorStop(1, 'rgba(255,195,130,0)');
+      ctx.fillStyle = hl; ctx.fillRect(0, 0, S, S);
+      return new THREE.CanvasTexture(cv);
+    }
+
+    const mugGroup = new THREE.Group();
+    mugGroup.position.set(5.7, 0.54, -3.9);
+    mugGroup.scale.set(1.5, 1.5, 1.5);
+    const whitePaperMat = new THREE.MeshStandardMaterial({ color: 0xf8f8f6, roughness: 0.84 });
+    const lidMat        = new THREE.MeshStandardMaterial({ color: 0xedede9, roughness: 0.55, metalness: 0.01 });
+    const sleeveMat     = new THREE.MeshStandardMaterial({ color: 0x9b6535, roughness: 0.90 });
+
+    // Outer cup wall (open, tapered white paper)
+    const cupOuter = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.20, 0.62, 32, 1, true), whitePaperMat);
+    cupOuter.castShadow = true; mugGroup.add(cupOuter);
+    // Inner cup wall (dark interior — visible from top)
+    const cupInner = new THREE.Mesh(new THREE.CylinderGeometry(0.254, 0.188, 0.610, 32, 1, true),
+      new THREE.MeshStandardMaterial({ color: 0x1a0904, roughness: 0.70, side: THREE.BackSide }));
+    mugGroup.add(cupInner);
+    // Cup bottom disk
+    const cupBase = new THREE.Mesh(new THREE.CylinderGeometry(0.200, 0.200, 0.018, 32), whitePaperMat);
+    cupBase.position.y = -0.301; cupBase.castShadow = true; mugGroup.add(cupBase);
+    // Cardboard sleeve (middle section)
+    const cupSleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.254, 0.218, 0.30, 32, 1, true), sleeveMat);
+    cupSleeve.position.y = -0.05; cupSleeve.castShadow = true; mugGroup.add(cupSleeve);
+    const sleeveTopRing = new THREE.Mesh(new THREE.CylinderGeometry(0.256, 0.254, 0.012, 32), sleeveMat);
+    sleeveTopRing.position.y = 0.107; mugGroup.add(sleeveTopRing);
+    const sleeveBotRing = new THREE.Mesh(new THREE.CylinderGeometry(0.219, 0.218, 0.012, 32), sleeveMat);
+    sleeveBotRing.position.y = -0.207; mugGroup.add(sleeveBotRing);
+    // White plastic lid — brim overhangs the cup top
+    const lidBrim = new THREE.Mesh(new THREE.CylinderGeometry(0.295, 0.276, 0.024, 32), lidMat);
+    lidBrim.position.y = 0.322; mugGroup.add(lidBrim);
+    // Lid dome (the raised centre of the lid)
+    const lidDome = new THREE.Mesh(new THREE.CylinderGeometry(0.238, 0.238, 0.030, 32), lidMat);
+    lidDome.position.y = 0.344; mugGroup.add(lidDome);
+    // Small sip-hole bump
+    const sipBump = new THREE.Mesh(new THREE.CylinderGeometry(0.048, 0.048, 0.014, 14), lidMat);
+    sipBump.position.set(0.12, 0.360, 0); mugGroup.add(sipBump);
+    scene.add(mugGroup);
+
+
+    // ─────────────────────────────────────────
+    // ROOM ENVIRONMENT
+    // ─────────────────────────────────────────
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(60, 60),
+      new THREE.MeshStandardMaterial({ color: 0xcfbfa3, roughness: 0.95 }));
+    floor.rotation.x = -Math.PI / 2; floor.position.y = -0.5; floor.receiveShadow = true; scene.add(floor);
+
+    const backWall = new THREE.Mesh(new THREE.PlaneGeometry(60, 20),
+      new THREE.MeshStandardMaterial({ color: 0xede3d5, roughness: 0.97 }));
+    backWall.position.set(0, 5, -9.5); scene.add(backWall);
+
+    const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(25, 20),
+      new THREE.MeshStandardMaterial({ color: 0xe8ddd0, roughness: 0.97 }));
+    leftWall.position.set(-10.5, 5, 0); leftWall.rotation.y = Math.PI / 2; scene.add(leftWall);
+
+    const windowGlow = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 2.4),
+      new THREE.MeshBasicMaterial({ color: 0xfff6cc, transparent: true, opacity: 0.88 }));
+    windowGlow.position.set(-10.35, 3.8, -1.5); windowGlow.rotation.y = Math.PI / 2; scene.add(windowGlow);
+
+    const frameMat = new THREE.MeshStandardMaterial({ color: 0xbfaa8a, roughness: 0.6 });
+    const winH = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 2.5), frameMat);
+    winH.position.set(-10.35, 3.8, -1.5); winH.rotation.y = Math.PI / 2; scene.add(winH);
+    const winV = new THREE.Mesh(new THREE.BoxGeometry(0.05, 2.4, 0.05), frameMat);
+    winV.position.set(-10.35, 3.8, -1.5); winV.rotation.y = Math.PI / 2; scene.add(winV);
+
+
+    // ─────────────────────────────────────────
+    // FLOOR PLANT
+    // ─────────────────────────────────────────
+    const plantGroup = new THREE.Group();
+    plantGroup.position.set(-9.0, -0.5, -5.5);
+    plantGroup.scale.set(3, 3, 3);
+    const terracottaMat = new THREE.MeshStandardMaterial({ color: 0xC05530, roughness: 0.82 });
+    const potBody = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.28, 0.65, 16), terracottaMat);
+    potBody.position.y = 0.325; potBody.castShadow = potBody.receiveShadow = true; plantGroup.add(potBody);
+    const potRim = new THREE.Mesh(new THREE.CylinderGeometry(0.455, 0.42, 0.048, 16), terracottaMat);
+    potRim.position.y = 0.674; potRim.castShadow = true; plantGroup.add(potRim);
+    const soilDisc = new THREE.Mesh(new THREE.CylinderGeometry(0.40, 0.40, 0.022, 16),
+      new THREE.MeshStandardMaterial({ color: 0x1a0d04, roughness: 0.97 }));
+    soilDisc.position.y = 0.672; plantGroup.add(soilDisc);
+    const dkLeafMat = new THREE.MeshStandardMaterial({ color: 0x286022, roughness: 0.88 });
+    const mdLeafMat = new THREE.MeshStandardMaterial({ color: 0x3c8030, roughness: 0.86 });
+    const leafDefs = [
+      { x:  0.00, y: 1.20, z:  0.00, r: 0.42, m: dkLeafMat },
+      { x:  0.30, y: 1.05, z:  0.10, r: 0.32, m: mdLeafMat },
+      { x: -0.28, y: 1.10, z:  0.18, r: 0.35, m: dkLeafMat },
+      { x:  0.10, y: 1.08, z: -0.28, r: 0.30, m: mdLeafMat },
+      { x: -0.20, y: 1.00, z: -0.22, r: 0.28, m: dkLeafMat },
+      { x:  0.18, y: 1.38, z: -0.10, r: 0.26, m: mdLeafMat },
+      { x: -0.14, y: 1.45, z:  0.14, r: 0.24, m: dkLeafMat },
+      { x:  0.00, y: 1.58, z:  0.00, r: 0.20, m: mdLeafMat },
+    ];
+    for (const l of leafDefs) {
+      const leaf = new THREE.Mesh(new THREE.SphereGeometry(l.r, 10, 8), l.m);
+      leaf.position.set(l.x, l.y, l.z); leaf.castShadow = true; plantGroup.add(leaf);
+    }
+    scene.add(plantGroup);
+
+
+    // ═════════════════════════════════════════
+    // SELECTION ZONE VISUALS
+    // ═════════════════════════════════════════
+
+    const ZONE_Z      = 3.35;
+    const ZONE_HALF_D = 0.82;
+    const SLOT_X      = [-3.30, -1.10, 1.10, 3.30];
+    const CARD_W      = 1.65;
+    const CARD_D      = 1.125;
+
+    // Zone background highlight
+    const zoneBgMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(9.6, ZONE_HALF_D * 2),
+      new THREE.MeshBasicMaterial({ color: 0xa8c8e8, transparent: true, opacity: 0.20, depthWrite: false })
+    );
+    zoneBgMesh.rotation.x = -Math.PI / 2;
+    zoneBgMesh.position.set(0, 0.0915, ZONE_Z);
+    scene.add(zoneBgMesh);
+
+    // Slot outline texture
+    function createSlotOutlineTexture() {
+      const W = 512, H = 360;
+      const cv = document.createElement('canvas');
+      cv.width = W; cv.height = H;
+      const ctx = cv.getContext('2d');
+      ctx.clearRect(0, 0, W, H);
+      ctx.strokeStyle = 'rgba(130, 185, 240, 0.80)';
+      ctx.lineWidth = 7;
+      ctx.setLineDash([22, 14]);
+      ctx.lineDashOffset = 6;
+      ctx.strokeRect(8, 8, W - 16, H - 16);
+      return new THREE.CanvasTexture(cv);
+    }
+    const slotOutlineMat = new THREE.MeshBasicMaterial({
+      map: createSlotOutlineTexture(), transparent: true, depthWrite: false
+    });
+    const slotOutlineMeshes = [];
+    for (const sx of SLOT_X) {
+      const sp = new THREE.Mesh(new THREE.PlaneGeometry(CARD_W, CARD_D), slotOutlineMat);
+      sp.rotation.x = -Math.PI / 2;
+      sp.position.set(sx, 0.0918, ZONE_Z);
+      scene.add(sp);
+      slotOutlineMeshes.push(sp);
+    }
+
+    // Zone label
+    function createZoneLabelTexture() {
+      const W = 2048, H = 200;   // aspect matches plane 8.8/0.86 ≈ 10.23 — no horizontal stretch
+      const cv = document.createElement('canvas');
+      cv.width = W; cv.height = H;
+      const ctx = cv.getContext('2d');
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.82)';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = "bold 52px 'Georgia', 'Yu Gothic', Meiryo, serif";
+      ctx.fillText(T('zoneLine1'), W / 2, H * 0.27);
+      ctx.font = "bold 68px 'Georgia', 'Yu Gothic', Meiryo, serif";
+      ctx.fillText(T('zoneLine2'), W / 2, H * 0.74);
+      return new THREE.CanvasTexture(cv);
+    }
+    const zoneLabelMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(8.8, 0.86),
+      new THREE.MeshBasicMaterial({ map: createZoneLabelTexture(), transparent: true, depthWrite: false })
+    );
+    zoneLabelMesh.rotation.x = -Math.PI / 2;
+    zoneLabelMesh.position.set(0, 0.0920, ZONE_Z - ZONE_HALF_D - 0.50);
+    scene.add(zoneLabelMesh);
+
+
+    // ═════════════════════════════════════════
+    // CARD SYSTEM
+    // ═════════════════════════════════════════
+
+    const CARD_DATA = [
+      { en: 'Detective',                  ja: '探偵',                           colour: 'blue'   },
+      { en: 'Realistic',                  ja: '現実主義',                       colour: 'blue'   },
+      { en: 'Likes numbers',              ja: '数字が好き',                     colour: 'blue'   },
+      { en: 'Critical thinker',           ja: '疑い深い',                       colour: 'blue'   },
+      { en: 'Knows about money',          ja: 'お金に詳しい',                   colour: 'blue'   },
+      { en: 'Plans in advance',           ja: '事前にプランを\nたてる',          colour: 'green'  },
+      { en: 'Likes rules',                ja: 'ルールは好き',                   colour: 'green'  },
+      { en: 'Meticulous',                 ja: '慎重派で、細かい',               colour: 'green'  },
+      { en: 'Clean and tidy',             ja: '綺麗で\n整理整頓',               colour: 'green'  },
+      { en: 'Punctual',                   ja: '遅刻はしない\n時間管理が得意',   colour: 'green'  },
+      { en: 'Takes risks',                ja: 'リスクを取る',                   colour: 'yellow' },
+      { en: 'Dreaming big',               ja: '大きな夢を\n持つのが好き',       colour: 'yellow' },
+      { en: 'Adaptive to change',         ja: '新しい環境に\n合わせるのが得意', colour: 'yellow' },
+      { en: 'Dislikes rules',             ja: 'ルールは嫌い',                   colour: 'yellow' },
+      { en: 'Likes surprises',            ja: 'サプライズが好き',               colour: 'yellow' },
+      { en: 'Teacher',                    ja: '教えるのが好き',                 colour: 'red'    },
+      { en: 'Talkative',                  ja: 'おしゃべり',                     colour: 'red'    },
+      { en: 'Expressive and\nemotional',  ja: '感情表現が豊か',                 colour: 'red'    },
+      { en: 'Empathetic',                 ja: '他人の気持ちが\n分かる',          colour: 'red'    },
+      { en: 'Team Player',                ja: 'チームワークが得意',             colour: 'red'    },
+    ];
+
+    function shuffleArray(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function createCardFrontTexture(text) {
+      const W = 512, H = 360;
+      const cv = document.createElement('canvas');
+      cv.width = W; cv.height = H;
+      const ctx = cv.getContext('2d');
+      ctx.fillStyle = '#FEFCF8'; ctx.fillRect(0, 0, W, H);
+      for (let i = 0; i < 2500; i++) {
+        ctx.fillStyle = `rgba(100,80,40,${Math.random() * 0.035})`;
+        ctx.fillRect(Math.random() * W, Math.random() * H, 1, 1);
+      }
+      ctx.strokeStyle = '#1e1e1e'; ctx.lineWidth = 5; ctx.strokeRect(8, 8, W-16, H-16);
+      ctx.strokeStyle = '#3a3a3a'; ctx.lineWidth = 1.5; ctx.strokeRect(20, 20, W-40, H-40);
+      ctx.fillStyle = '#3a3a3a';
+      [[20,20],[W-25,20],[20,H-25],[W-25,H-25]].forEach(([x,y]) => ctx.fillRect(x, y, 5, 5));
+      const ly1 = H * 0.22, ly2 = H * 0.78;
+      ctx.strokeStyle = 'rgba(100,85,60,0.45)'; ctx.lineWidth = 1;
+      [ly1, ly2].forEach(ly => {
+        ctx.beginPath(); ctx.moveTo(35, ly); ctx.lineTo(W/2 - 14, ly); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(W/2 + 14, ly); ctx.lineTo(W - 35, ly); ctx.stroke();
+      });
+      const drawDiamond = (cx, cy, s) => {
+        ctx.fillStyle = 'rgba(100,85,60,0.6)';
+        ctx.beginPath(); ctx.moveTo(cx, cy-s); ctx.lineTo(cx+s, cy); ctx.lineTo(cx, cy+s); ctx.lineTo(cx-s, cy);
+        ctx.closePath(); ctx.fill();
+      };
+      drawDiamond(W/2, ly1, 5); drawDiamond(W/2, ly2, 5);
+      const tCY = (ly1 + ly2) / 2;
+      const lines = text.split('\n');
+      ctx.fillStyle = '#0d0d0d'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const CJK_FONT = "'Yu Gothic', 'Hiragino Mincho ProN', Meiryo";
+      let fs = 82; ctx.font = `bold ${fs}px Georgia, ${CJK_FONT}, serif`;
+      for (const l of lines) {
+        while (ctx.measureText(l).width > W - 75 && fs > 24) { fs -= 2; ctx.font = `bold ${fs}px Georgia, ${CJK_FONT}, serif`; }
+      }
+      const lh = fs * 1.28, totH = lines.length * lh;
+      let sy = tCY - totH / 2 + lh / 2;
+      for (const l of lines) { ctx.fillText(l, W/2, sy); sy += lh; }
+      return new THREE.CanvasTexture(cv);
+    }
+
+    function createCardBackTexture() {
+      const W = 512, H = 360;
+      const cv = document.createElement('canvas');
+      cv.width = W; cv.height = H;
+      const ctx = cv.getContext('2d');
+      ctx.fillStyle = '#F2EDE3'; ctx.fillRect(0, 0, W, H);
+      ctx.strokeStyle = 'rgba(80,65,48,0.10)'; ctx.lineWidth = 1;
+      for (let i = -H; i < W + H; i += 22) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i + H, H); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(i + H, 0); ctx.lineTo(i, H); ctx.stroke();
+      }
+      ctx.strokeStyle = '#2a2216'; ctx.lineWidth = 5; ctx.strokeRect(8, 8, W-16, H-16);
+      ctx.strokeStyle = 'rgba(60,48,30,0.5)'; ctx.lineWidth = 1.5; ctx.strokeRect(20, 20, W-40, H-40);
+      const cx = W/2, cy = H/2;
+      const fd = (x, y, s, a = 0.28) => {
+        ctx.fillStyle = `rgba(70,55,35,${a})`;
+        ctx.beginPath(); ctx.moveTo(x,y-s); ctx.lineTo(x+s,y); ctx.lineTo(x,y+s); ctx.lineTo(x-s,y);
+        ctx.closePath(); ctx.fill();
+      };
+      fd(cx,cy,24); fd(cx,cy,12,0.20);
+      fd(cx,cy-40,6,0.17); fd(cx,cy+40,6,0.17);
+      fd(cx-55,cy,6,0.17); fd(cx+55,cy,6,0.17);
+      return new THREE.CanvasTexture(cv);
+    }
+
+    const CARD_T = 0.028;
+    const CARD_Y = 0.09 + CARD_T / 2 + 0.002;
+
+    const sharedBackMat = new THREE.MeshStandardMaterial({ map: createCardBackTexture(), roughness: 0.45 });
+    const cardEdgeMat   = new THREE.MeshStandardMaterial({ color: 0xf0ece2, roughness: 0.55 });
+    const allCards      = [];
+
+    function createCard(cardData) {
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(CARD_W, CARD_T, CARD_D),
+        [
+          cardEdgeMat, cardEdgeMat,
+          new THREE.MeshStandardMaterial({ map: createCardFrontTexture(cardData[lang] || cardData.en), roughness: 0.38 }),
+          sharedBackMat,
+          cardEdgeMat, cardEdgeMat,
+        ]
+      );
+      mesh.castShadow = mesh.receiveShadow = true;
+      mesh.userData = { ...cardData, isCard: true, isSelected: false, isDiscarded: false, homeX: 0, homeZ: 0, homeRy: 0 };
+      allCards.push(mesh);
+      return mesh;
+    }
+
+    const COL_X = [-4.3, -2.15, 0, 2.15, 4.3];
+    const ROW_Z = [-3.30, -1.90, -0.50, 0.90];
+
+    shuffleArray(CARD_DATA).forEach((cd, i) => {
+      const card = createCard(cd);
+      const hx  = COL_X[i % 5]           + (Math.random() - 0.5) * 0.28;
+      const hz  = ROW_Z[Math.floor(i/5)] + (Math.random() - 0.5) * 0.22;
+      const hry = (Math.random() - 0.5) * 0.26;
+      card.position.set(hx, CARD_Y, hz);
+      card.rotation.y = hry;
+      card.userData.homeX  = hx;
+      card.userData.homeZ  = hz;
+      card.userData.homeRy = hry;
+      scene.add(card);
+    });
+
+
+    // ═════════════════════════════════════════
+    // STEP DATA  (M5)
+    // ═════════════════════════════════════════
+
+    const STEPS = [
+      { labelKey: 'step1Label', instrKey: 'step1Instr', timerSecs: 120, maxZone: 4 },
+      { labelKey: 'step2Label', instrKey: 'step2Instr', timerSecs: 60,  maxZone: 4 },
+      { labelKey: 'step3Label', instrKey: 'step3Instr', timerSecs: 60,  maxZone: 4 },
+    ];
+
+
+    // ═════════════════════════════════════════
+    // GAME STATE  (M5)
+    // ═════════════════════════════════════════
+
+    const GS = Object.freeze({ IDLE: 'idle', PLAYING: 'playing', BETWEEN: 'between', REVEAL: 'reveal', DONE: 'done' });
+    let gameState         = GS.IDLE;
+    let currentStep       = 0;
+    let timeLeft          = 0;
+    let timerExpired      = false;
+    let lastTick          = 0;
+    let revealBounceStart = 0;
+
+    // DOM refs
+    const timerEl     = document.getElementById('timer-display');
+    const timeExtEl   = document.getElementById('time-ext');
+    const stepPanelEl = document.getElementById('step-panel');
+    const stepLabelEl = document.getElementById('step-label');
+    const stepInstrEl = document.getElementById('step-instructions');
+    const counterEl   = document.getElementById('sel-counter');
+    const btnConfirm  = document.getElementById('btn-confirm');
+    const endScreenEl = document.getElementById('end-screen');
+    const endTitleEl  = document.getElementById('end-title');
+    const endBodyEl   = document.getElementById('end-body');
+
+
+    // ─── Timer helpers ────────────────────────────
+    function formatTime(s) {
+      return `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
+    }
+
+    function updateTimerDisplay() {
+      timerEl.textContent = formatTime(timeLeft);
+      timerEl.classList.toggle('amber',   !timerExpired && timeLeft <= 20);
+      timerEl.classList.toggle('expired',  timerExpired);
+    }
+
+    function showTimeExtFlash() {
+      timeExtEl.classList.remove('show');
+      void timeExtEl.offsetWidth;   // force reflow to restart CSS animation
+      timeExtEl.classList.add('show');
+    }
+
+    function timerLoop(now) {
+      if (gameState !== GS.PLAYING) return;
+      if (now - lastTick >= 1000) {
+        lastTick += 1000;
+        timeLeft  = Math.max(0, timeLeft - 1);
+        updateTimerDisplay();
+        if (timeLeft === 0) {
+          // Auto-extend: add 30 s and stay in expired state
+          timerExpired = true;
+          timeLeft     = 30;
+          updateTimerDisplay();
+          showTimeExtFlash();
+        }
+      }
+      requestAnimationFrame(timerLoop);
+    }
+
+
+    // ═════════════════════════════════════════
+    // SELECTION STATE  (M4 base)
+    // ═════════════════════════════════════════
+
+    const selectedSlots  = [null, null, null, null];
+    const animatingCards = new Map();
+    let lastTapCard = null;
+    let lastTapTime = 0;
+    const DOUBLE_TAP_MS = 380;
+
+    function updateCounter() {
+      const max = STEPS[currentStep] ? STEPS[currentStep].maxZone : 2;
+      const n   = selectedSlots.filter(Boolean).length;
+      counterEl.textContent = n < max
+        ? `${n} / ${max}  \u00b7  ${T('counterHint')}`
+        : `${n} / ${max}`;
+      counterEl.classList.toggle('all-done', n === max);
+      updateConfirmButton();
+    }
+
+    function updateConfirmButton() {
+      if (gameState !== GS.PLAYING || !STEPS[currentStep]) return;
+      const max = STEPS[currentStep].maxZone;
+      const n   = selectedSlots.filter(Boolean).length;
+      btnConfirm.disabled = (n !== max);
+    }
+
+    function findCardSlot(card)      { return selectedSlots.indexOf(card); }
+
+    function findNearestFreeSlot(cardX) {
+      const max = STEPS[currentStep] ? STEPS[currentStep].maxZone : 0;
+      let bestIdx = -1, bestDist = Infinity;
+      for (let i = 0; i < max; i++) {
+        if (selectedSlots[i] !== null) continue;
+        const d = Math.abs(cardX - SLOT_X[i]);
+        if (d < bestDist) { bestDist = d; bestIdx = i; }
+      }
+      return bestIdx;
+    }
+
+    function findNearestSlotIdx(cardX) {
+      let bestIdx = 0, bestDist = Infinity;
+      for (let i = 0; i < SLOT_X.length; i++) {
+        const d = Math.abs(cardX - SLOT_X[i]);
+        if (d < bestDist) { bestDist = d; bestIdx = i; }
+      }
+      return bestIdx;
+    }
+
+    function animateCardTo(card, tx, ty, tz, tRy, tRx, onComplete) {
+      animatingCards.set(card, {
+        tx, ty, tz, tRy,
+        tRx:        (tRx !== undefined) ? tRx : card.rotation.x,
+        onComplete: onComplete || null,
+      });
+    }
+
+    function selectCard(card) {
+      const slotIdx = findNearestFreeSlot(card.position.x);
+      if (slotIdx === -1) return;
+      selectedSlots[slotIdx] = card;
+      card.userData.isSelected = true;
+      animateCardTo(card, SLOT_X[slotIdx], CARD_Y, ZONE_Z, 0);
+      updateCounter();
+    }
+
+    function deselectCard(card) {
+      const slotIdx = findCardSlot(card);
+      if (slotIdx !== -1) selectedSlots[slotIdx] = null;
+      card.userData.isSelected = false;
+      animateCardTo(card, card.userData.homeX, CARD_Y, card.userData.homeZ, card.userData.homeRy);
+      updateCounter();
+    }
+
+
+    // ═════════════════════════════════════════
+    // DISCARD MECHANIC  (M5)
+    // ═════════════════════════════════════════
+
+    function applyGreyMaterial(card) {
+      // Create per-card grey materials (don't modify shared materials)
+      const greyFront = new THREE.MeshStandardMaterial({
+        map: card.material[2].map, color: 0x909090, roughness: 0.5
+      });
+      const greyEdge = new THREE.MeshStandardMaterial({ color: 0xb8b8b8, roughness: 0.6 });
+      card.material = [greyEdge, greyEdge, greyFront, card.material[3], greyEdge, greyEdge];
+    }
+
+    function discardRightmostCard() {
+      const max = STEPS[currentStep].maxZone;
+      for (let i = max - 1; i >= 0; i--) {
+        const card = selectedSlots[i];
+        if (!card) continue;
+        selectedSlots[i]          = null;
+        card.userData.isSelected  = false;
+        card.userData.isDiscarded = true;
+        applyGreyMaterial(card);
+        // Brief pause so player sees the discard before the card flies home
+        setTimeout(() => {
+          animateCardTo(card, card.userData.homeX, CARD_Y, card.userData.homeZ, card.userData.homeRy);
+        }, 400);
+        break;
+      }
+    }
+
+
+    // ═════════════════════════════════════════
+    // DRAG INTERACTION  (M3 base + M4 + M5 gate)
+    // ═════════════════════════════════════════
+
+    const CARD_LIFT_Y = CARD_Y + 0.45;
+    const X_MIN = -(6.5 - CARD_W / 2);
+    const X_MAX =  (6.5 - CARD_W / 2);
+    const Z_MIN = -(4.5 - CARD_D / 2);
+    const Z_MAX =  (4.5 - CARD_D / 2);
+
+    const dragPlane  = new THREE.Plane(new THREE.Vector3(0, 1, 0), -CARD_LIFT_Y);
+    const raycaster  = new THREE.Raycaster();
+    const pointer    = new THREE.Vector2();
+    const planeHit   = new THREE.Vector3();
+    const dragOffset = new THREE.Vector3();
+
+    let draggedCard = null;
+    let isDragging  = false;
+
+    function updatePointer(event) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.x =  ((event.clientX - rect.left) / rect.width)  * 2 - 1;
+      pointer.y = -((event.clientY - rect.top)  / rect.height) * 2 + 1;
+    }
+
+    function onPointerDown(event) {
+      // ── Reveal phase: single tap flips a zone card ──
+      if (gameState === GS.REVEAL) {
+        updatePointer(event);
+        raycaster.setFromCamera(pointer, camera);
+        const hits = raycaster.intersectObjects(allCards, false);
+        if (!hits.length) return;
+        const card = hits[0].object;
+        if (card.userData.isSelected && !card.userData.isFlipped && !card.userData.flipping) {
+          flipCard(card);
+        }
+        return;
+      }
+
+      if (gameState !== GS.PLAYING) return;
+      updatePointer(event);
+      raycaster.setFromCamera(pointer, camera);
+
+      const hits = raycaster.intersectObjects(allCards, false);
+      const hit  = hits.find(h => !h.object.userData.isDiscarded);
+      if (!hit) return;
+
+      const card = hit.object;
+      const now  = performance.now();
+
+      // Double-tap detection
+      if (lastTapCard === card && (now - lastTapTime) < DOUBLE_TAP_MS) {
+        lastTapCard = null; lastTapTime = 0;
+        if (draggedCard === card) { draggedCard = null; isDragging = false; renderer.domElement.style.cursor = 'grab'; }
+        animateCardTo(card, card.position.x, CARD_Y, card.position.z, card.rotation.y);
+        if (card.userData.isSelected) { deselectCard(card); } else { selectCard(card); }
+        return;
+      }
+      lastTapCard = card;
+      lastTapTime = now;
+
+      draggedCard = card;
+      isDragging  = true;
+      animatingCards.delete(card);
+      draggedCard.position.y = CARD_LIFT_Y;
+
+      raycaster.ray.intersectPlane(dragPlane, planeHit);
+      dragOffset.set(planeHit.x - draggedCard.position.x, 0, planeHit.z - draggedCard.position.z);
+
+      renderer.domElement.style.cursor = 'grabbing';
+      renderer.domElement.setPointerCapture(event.pointerId);
+    }
+
+    function onPointerMove(event) {
+      updatePointer(event);
+      raycaster.setFromCamera(pointer, camera);
+
+      if (isDragging && draggedCard) {
+        if (!raycaster.ray.intersectPlane(dragPlane, planeHit)) return;
+        draggedCard.position.x = THREE.MathUtils.clamp(planeHit.x - dragOffset.x, X_MIN, X_MAX);
+        draggedCard.position.z = THREE.MathUtils.clamp(planeHit.z - dragOffset.z, Z_MIN, Z_MAX);
+      } else {
+        const hits = raycaster.intersectObjects(allCards, false);
+        if (gameState === GS.REVEAL) {
+          const c = hits.length ? hits[0].object : null;
+          const canFlip = c && c.userData.isSelected && !c.userData.isFlipped && !c.userData.flipping;
+          renderer.domElement.style.cursor = canFlip ? 'pointer' : 'default';
+        } else {
+          const hoverable = hits.length && !hits[0].object.userData.isDiscarded;
+          renderer.domElement.style.cursor = (gameState === GS.PLAYING && hoverable) ? 'grab' : 'default';
+        }
+      }
+    }
+
+    function onPointerUp() {
+      if (!isDragging || !draggedCard) return;
+
+      const card = draggedCard;
+      draggedCard = null;
+      isDragging  = false;
+      renderer.domElement.style.cursor = 'default';
+
+      const inZone = card.position.z > (ZONE_Z - ZONE_HALF_D);
+
+      if (inZone) {
+        const nearestIdx = findNearestSlotIdx(card.position.x);
+        const prevSlot   = findCardSlot(card);
+        if (prevSlot !== -1) selectedSlots[prevSlot] = null;
+
+        const occupant = selectedSlots[nearestIdx];
+        if (occupant && occupant !== card) {
+          if (prevSlot !== -1) {
+            selectedSlots[prevSlot] = occupant;
+            animateCardTo(occupant, SLOT_X[prevSlot], CARD_Y, ZONE_Z, 0);
+          } else {
+            selectedSlots[nearestIdx] = null;
+            occupant.userData.isSelected = false;
+            animateCardTo(occupant, occupant.userData.homeX, CARD_Y, occupant.userData.homeZ, occupant.userData.homeRy);
+          }
+        }
+        selectedSlots[nearestIdx]    = card;
+        card.userData.isSelected     = true;
+        animateCardTo(card, SLOT_X[nearestIdx], CARD_Y, ZONE_Z, 0);
+        updateCounter();
+      } else {
+        if (card.userData.isSelected) {
+          const s = findCardSlot(card);
+          if (s !== -1) selectedSlots[s] = null;
+          card.userData.isSelected = false;
+          updateCounter();
+        }
+        animateCardTo(card, card.position.x, CARD_Y, card.position.z, card.rotation.y);
+      }
+    }
+
+    renderer.domElement.addEventListener('pointerdown',  onPointerDown);
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup',   onPointerUp);
+    renderer.domElement.addEventListener('contextmenu',  e => e.preventDefault());
+
+
+    // ═════════════════════════════════════════
+    // GAME FLOW  (M5)
+    // ═════════════════════════════════════════
+
+    function setupStep(stepIdx) {
+      const step   = STEPS[stepIdx];
+      gameState    = GS.PLAYING;
+      timerExpired = false;
+      timeLeft     = step.timerSecs;
+
+      stepLabelEl.textContent = T(step.labelKey);
+      stepInstrEl.textContent = T(step.instrKey);
+
+      timerEl.classList.remove('amber', 'expired');
+      updateTimerDisplay();
+      updateCounter();
+
+      lastTick = performance.now();
+      requestAnimationFrame(timerLoop);
+    }
+
+    function startGame() {
+      currentStep = 0;
+      btnConfirm.textContent = T('btnConfirm');
+      document.getElementById('start-screen').style.display = 'none';
+      timerEl.style.display     = 'block';
+      stepPanelEl.style.display = 'block';
+      counterEl.style.display   = 'block';
+      btnConfirm.style.display  = 'block';
+      setupStep(0);
+    }
+
+    function advanceStep() {
+      if (gameState !== GS.PLAYING) return;
+      gameState = GS.BETWEEN;
+      btnConfirm.disabled = true;
+
+      // Discard rightmost card when moving from step 0→1 or 1→2
+      if (currentStep < 2) discardRightmostCard();
+
+      currentStep++;
+
+      if (currentStep >= STEPS.length) {
+        setTimeout(startRevealPhase, 900);
+        return;
+      }
+      // Wait for the discard animation then start next step
+      setTimeout(() => setupStep(currentStep), 900);
+    }
+
+    // ═════════════════════════════════════════
+    // HERRMANN REVEAL  (M6)
+    // ═════════════════════════════════════════
+
+    const HERRMANN = {
+      blue:   { hex: '#1a55b8', emissive: [0.05, 0.18, 0.60], letter: 'A', name: 'Analytical',   nameJa: '論理・理性', label: 'Blue'   },
+      green:  { hex: '#1a9048', emissive: [0.05, 0.40, 0.15], letter: 'B', name: 'Practical',    nameJa: '堅実・計画', label: 'Green'  },
+      yellow: { hex: '#b88c00', emissive: [0.45, 0.32, 0.00], letter: 'D', name: 'Experimental', nameJa: '冒険・想像', label: 'Yellow' },
+      red:    { hex: '#c02828', emissive: [0.45, 0.05, 0.05], letter: 'C', name: 'Relational',   nameJa: '感覚・友好', label: 'Red'    },
+    };
+
+    function createColorRevealTexture(colour) {
+      const h = HERRMANN[colour];
+      const W = 256, H = 256;
+      const cv = document.createElement('canvas');
+      cv.width = W; cv.height = H;
+      const ctx = cv.getContext('2d');
+
+      ctx.fillStyle = h.hex;
+      ctx.fillRect(0, 0, W, H);
+
+      ctx.strokeStyle = 'rgba(0,0,0,0.22)';
+      ctx.lineWidth = 7;
+      ctx.strokeRect(7, 7, W - 14, H - 14);
+
+      ctx.fillStyle = '#000000';
+      ctx.font = 'bold 96px Georgia';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'alphabetic';
+      ctx.fillText(h.letter, W / 2, H * 0.60);
+
+      ctx.font = "bold 22px 'Georgia', 'Yu Gothic', Meiryo, serif";
+      ctx.fillStyle = 'rgba(0,0,0,0.88)';
+      ctx.fillText(lang === 'ja' ? h.nameJa : h.name, W / 2, H * 0.84);
+
+      return new THREE.CanvasTexture(cv);
+    }
+
+    function revealCardColor(card) {
+      const h = HERRMANN[card.userData.colour];
+      const mat = new THREE.MeshStandardMaterial({
+        map:              createColorRevealTexture(card.userData.colour),
+        emissive:         new THREE.Color(h.emissive[0], h.emissive[1], h.emissive[2]),
+        emissiveIntensity: 0.55,
+        roughness:        0.28,
+      });
+      card.material[3] = mat;
+    }
+
+    function flipCard(card) {
+      if (card.userData.isFlipped || card.userData.flipping) return;
+      card.userData.flipping      = true;
+      card.userData.colourRevealed = false;
+      // Lift + flip to -π; onComplete: settle back to table height
+      animateCardTo(
+        card,
+        card.position.x, CARD_Y + 0.40, card.position.z, card.rotation.y,
+        -Math.PI,
+        (c) => {
+          c.userData.flipping  = false;
+          c.userData.isFlipped = true;
+          animateCardTo(c, c.position.x, CARD_Y, c.position.z, c.rotation.y, -Math.PI);
+          checkAllRevealed();
+        }
+      );
+    }
+
+    function checkAllRevealed() {
+      if (selectedSlots.filter(Boolean).every(c => c.userData.isFlipped)) {
+        setTimeout(showResultScreen, 700);
+      }
+    }
+
+    function showResultScreen() {
+      gameState = GS.DONE;
+      stepPanelEl.style.display = 'none';
+      // Keep the 3D scene visible — just swap the confirm button to a restart action
+      btnConfirm.textContent    = T('btnRetry');
+      btnConfirm.disabled       = false;
+      btnConfirm.style.display  = 'block';
+      btnConfirm.onclick        = () => location.reload();
+    }
+
+    function startRevealPhase() {
+      gameState = GS.REVEAL;
+      revealBounceStart = performance.now();
+      timerEl.style.display    = 'none';
+      btnConfirm.style.display = 'none';
+      counterEl.style.display  = 'none';
+      // Reuse step panel for reveal instruction
+      stepLabelEl.textContent  = T('step4Label');
+      stepInstrEl.textContent  = T('step4Instr');
+      stepPanelEl.style.display = 'block';
+    }
+
+    // ─────────────────────────────────────────
+    // I18N HELPERS
+    // ─────────────────────────────────────────
+    function refreshCardTextures() {
+      for (const card of allCards) {
+        const text = lang === 'ja' ? card.userData.ja : card.userData.en;
+        card.material[2].map = createCardFrontTexture(text);
+        card.material[2].needsUpdate = true;
+      }
+    }
+
+    function refreshZoneLabel() {
+      const newTex = createZoneLabelTexture();
+      zoneLabelMesh.material.map.dispose();
+      zoneLabelMesh.material.map = newTex;
+      zoneLabelMesh.material.needsUpdate = true;
+    }
+
+    function updateStartScreen() {
+      document.getElementById('sc-title').textContent = T('title');
+      document.getElementById('sc-sub').textContent   = T('sub');
+      document.getElementById('sc-p1').textContent    = T('p1');
+      document.getElementById('sc-p2').textContent    = T('p2');
+      document.getElementById('sc-p3').textContent    = T('p3');
+      document.getElementById('sc-p4').textContent    = T('p4');
+      document.getElementById('btn-start').textContent = T('btnStart');
+      btnConfirm.textContent = T('btnConfirm');
+    }
+
+    document.querySelectorAll('input[name=lang]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        lang = radio.value;
+        updateStartScreen();
+        refreshCardTextures();
+        refreshZoneLabel();
+      });
+    });
+
+    document.getElementById('btn-start').addEventListener('click', startGame);
+    btnConfirm.addEventListener('click', advanceStep);
+
+
+    // ─────────────────────────────────────────
+    // RESIZE
+    // ─────────────────────────────────────────
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+
+    // ─────────────────────────────────────────
+    // ANIMATION LOOP
+    // ─────────────────────────────────────────
+    function animate() {
+      requestAnimationFrame(animate);
+
+      for (const [card, t] of animatingCards) {
+        card.position.x = THREE.MathUtils.lerp(card.position.x, t.tx,  0.14);
+        card.position.y = THREE.MathUtils.lerp(card.position.y, t.ty,  0.14);
+        card.position.z = THREE.MathUtils.lerp(card.position.z, t.tz,  0.14);
+        card.rotation.y = THREE.MathUtils.lerp(card.rotation.y, t.tRy, 0.14);
+        card.rotation.x = THREE.MathUtils.lerp(card.rotation.x, t.tRx, 0.14);
+
+        // Mid-flip colour reveal (triggers once card is edge-on to camera)
+        if (card.rotation.x < -Math.PI / 2 && !card.userData.colourRevealed) {
+          card.userData.colourRevealed = true;
+          revealCardColor(card);
+        }
+
+        if (
+          Math.abs(card.position.x - t.tx)  < 0.002 &&
+          Math.abs(card.position.y - t.ty)  < 0.001 &&
+          Math.abs(card.position.z - t.tz)  < 0.002 &&
+          Math.abs(card.rotation.y - t.tRy) < 0.002 &&
+          Math.abs(card.rotation.x - t.tRx) < 0.002
+        ) {
+          card.position.set(t.tx, t.ty, t.tz);
+          card.rotation.y = t.tRy;
+          card.rotation.x = t.tRx;
+          const cb = t.onComplete;
+          animatingCards.delete(card);
+          if (cb) cb(card);
+        }
+      }
+
+      // Reveal-phase bounce: gently pulse unflipped zone cards
+      if (gameState === GS.REVEAL) {
+        const bT = (performance.now() - revealBounceStart) / 1000;
+        selectedSlots.forEach((card, i) => {
+          if (card && !card.userData.isFlipped && !animatingCards.has(card)) {
+            card.position.y = CARD_Y + Math.abs(Math.sin(bT * 2.4 + i * 0.7)) * 0.06;
+          }
+        });
+      }
+
+      renderer.render(scene, camera);
+    }
+    animate();
+
+  </script>
+</body>
+</html>
